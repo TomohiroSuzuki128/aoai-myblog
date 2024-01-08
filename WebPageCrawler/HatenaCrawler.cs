@@ -7,6 +7,8 @@ using Azure.Storage.Blobs;
 using Azure.Identity;
 using System.Diagnostics;
 using System.Xml.Linq;
+using Azure.Storage.Blobs.Models;
+using System.Collections.Generic;
 
 namespace WebPageCrawler
 {
@@ -20,14 +22,14 @@ namespace WebPageCrawler
         {
             logger = loggerFactory.CreateLogger<HatenaCrawler>();
 
-            if(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HATENA_ID")))
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HATENA_ID")))
                 throw new Exception("HATENA_ID is not set.");
 
             hatenaID = Environment.GetEnvironmentVariable("HATENA_ID");
         }
 
         [Function("HatenaCrawler")]
-        public async Task Run([TimerTrigger("0 */5 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */3 * * * *")] TimerInfo myTimer)
         {
             logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
@@ -65,23 +67,28 @@ namespace WebPageCrawler
             {
                 continueLoop = false;
                 var html = await httpClient.GetStringAsync(url);
-
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                //TODO:更新日確認
-
                 foreach (var node in doc.DocumentNode.SelectNodes("//a[@class='entry-title-link bookmark']"))
                 {
-                    Console.WriteLine(node.GetAttributeValue("href", ""));
+                    var entryUrl = node.GetAttributeValue("href", "");
+                    Console.WriteLine(entryUrl);
                     Console.WriteLine(node.InnerHtml);
-                    // Console.WriteLine(node.InnerHtml + "," + node.GetAttributeValue("href", ""));  
+
+                    var entryHtml = await httpClient.GetStringAsync(entryUrl);
+                    var entryDoc = new HtmlDocument();
+                    entryDoc.LoadHtml(entryHtml);
+                    var publishedTimeNodes = entryDoc.DocumentNode.SelectNodes("//meta[@property='article:published_time']");
+                    var publishedTimeNode = publishedTimeNodes[0];
+                    var publishedUnixEpochTicks = publishedTimeNode.GetAttributeValue("content", "");
+                    var publishedDateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(long.Parse(publishedUnixEpochTicks));
 
                     var entry = new HatenaBlogEntry(
-                        title: node.InnerHtml,
-                        url: node.GetAttributeValue("href", ""),
-                        lastUpdated: DateTimeOffset.UtcNow
-                        );
+                       title: node.InnerHtml,
+                       url: entryUrl,
+                       lastUpdated: publishedDateTimeOffset.ToOffset(TimeSpan.FromHours(9))
+                       );
                     entries.Add(entry);
                 }
 
@@ -97,20 +104,32 @@ namespace WebPageCrawler
 
         async Task SaveHtmlToAzureBlob(List<HatenaBlogEntry> entries)
         {
-            foreach (var entry in entries)
+            foreach (var item in entries.Select((entry, index) => new { entry, index }))
             {
-                var blobName = entry.Url.Replace($"https://{hatenaID}.hatenablog.jp/entry/", "").Replace("/", "-") + ".html";
+                var blobName = item.entry.Url.Replace($"https://{hatenaID}.hatenablog.jp/entry/", "").Replace("/", "-") + ".html";
                 var blobClient = new BlobClient
                 (
                        Environment.GetEnvironmentVariable("BLOB_CONNECTION_STRING"),
                         "scraped-hatena",
                         blobName
                     );
-                var blobContent = await httpClient.GetStreamAsync(entry.Url);
-                //TODO:上書き確認
-                await blobClient.UploadAsync(blobContent, true);
+                var htmlStream = await httpClient.GetStreamAsync(item.entry.Url);
+                var options = new BlobUploadOptions
+                {
+                    HttpHeaders = new BlobHttpHeaders
+                    {
+                        ContentType = "text/html",
+                    },
+                    Metadata = new Dictionary<string, string>
+                    {
+                        { "url", item.entry.Url },
+                        { "lastUpdated", item.entry.LastUpdated.ToString()}
+                    }
+                    // TODO:更新条件実装
+                };
+                Console.WriteLine($"Uploading : {item.index + 1}/{entries.Count.ToString("000000")} {item.entry.Url}");
+                await blobClient.UploadAsync(htmlStream, options);
             }
         }
-
     }
 }
