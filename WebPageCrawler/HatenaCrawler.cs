@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Net;
-using HtmlAgilityPack;
+using System.Net.Http;
+using AngleSharp;
+using AngleSharp.Html.Parser;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Azure.Storage.Blobs;
@@ -9,6 +10,8 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using Azure.Storage.Blobs.Models;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace WebPageCrawler
 {
@@ -62,40 +65,38 @@ namespace WebPageCrawler
             var continueLoop = true;
             var url = blogRootUrl;
             var entries = new List<HatenaBlogEntry>();
+            var parser = new HtmlParser();
 
             while (continueLoop)
             {
                 continueLoop = false;
                 var html = await httpClient.GetStringAsync(url);
-                var doc = new HtmlDocument();
-                doc.LoadHtml(html);
+                var document = await parser.ParseDocumentAsync(html);
 
-                foreach (var node in doc.DocumentNode.SelectNodes("//a[@class='entry-title-link bookmark']"))
+                foreach (var node in document.QuerySelectorAll("a.entry-title-link.bookmark"))
                 {
-                    var entryUrl = node.GetAttributeValue("href", "");
+                    var entryUrl = node.GetAttribute("href");
                     Console.WriteLine(entryUrl);
-                    Console.WriteLine(node.InnerHtml);
+                    Console.WriteLine(node.TextContent);
 
                     var entryHtml = await httpClient.GetStringAsync(entryUrl);
-                    var entryDoc = new HtmlDocument();
-                    entryDoc.LoadHtml(entryHtml);
-                    var publishedTimeNodes = entryDoc.DocumentNode.SelectNodes("//meta[@property='article:published_time']");
-                    var publishedTimeNode = publishedTimeNodes[0];
-                    var publishedUnixEpochTicks = publishedTimeNode.GetAttributeValue("content", "");
+                    var entryDocument = await parser.ParseDocumentAsync(entryHtml);
+                    var publishedTimeNode = entryDocument.QuerySelector("meta[property='article:published_time']");
+                    var publishedUnixEpochTicks = publishedTimeNode.GetAttribute("content");
                     var publishedDateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(long.Parse(publishedUnixEpochTicks));
 
                     var entry = new HatenaBlogEntry(
-                       title: node.InnerHtml,
+                       title: node.TextContent,
                        url: entryUrl,
                        lastUpdated: publishedDateTimeOffset.ToOffset(TimeSpan.FromHours(9))
                        );
                     entries.Add(entry);
                 }
 
-                var nextPageNode = doc.DocumentNode.SelectSingleNode("//span[@class='pager-next']/a");
+                var nextPageNode = document.QuerySelector("span.pager-next > a");
                 if (nextPageNode != null)
                 {
-                    url = nextPageNode.GetAttributeValue("href", "");
+                    url = nextPageNode.GetAttribute("href");
                     continueLoop = true;
                 }
             }
