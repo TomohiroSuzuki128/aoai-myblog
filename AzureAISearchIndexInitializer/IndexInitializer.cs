@@ -2,9 +2,6 @@
 using Azure.Search.Documents;
 using Azure.Search.Documents.Indexes;
 using Azure.Search.Documents.Indexes.Models;
-using Azure.Search.Documents.Models;
-using Microsoft.Extensions.Configuration;
-using System.Net;
 
 namespace AzureAISearchIndexInitializer
 {
@@ -177,7 +174,6 @@ namespace AzureAISearchIndexInitializer
 
             catch (RequestFailedException e) when (e.Status == 404)
             {
-                // Throw an exception if the index name isn't found
                 Console.WriteLine("The index doesn't exist. No deletion occurred.");
             }
             catch (Exception ex)

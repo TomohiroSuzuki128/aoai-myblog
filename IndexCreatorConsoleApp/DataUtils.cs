@@ -53,32 +53,7 @@ namespace IndexCreator
         };
 
 
-        public class TokenEstimator
-        {
-            private ITokenizer gpt2Tokenizer;
 
-            public TokenEstimator() => BuildTokenizer().Wait();
-
-            private async Task BuildTokenizer()
-            {
-                gpt2Tokenizer = await TokenizerBuilder.CreateByModelNameAsync("gpt2");
-            }
-
-            public int EstimateTokens(string text)
-            {
-                //TODO:全ての特殊文字を許可するになっているか
-                return gpt2Tokenizer.Encode(text, Array.Empty<string>()).Count;
-            }
-
-            public string ConstructTokensWithSize(string tokens, int numOfTokens)
-            {
-                var encodedTokens = gpt2Tokenizer.Encode(tokens, Array.Empty<string>());
-                var newTokens = gpt2Tokenizer.Decode(encodedTokens.Take(numOfTokens).ToArray());
-                return newTokens;
-            }
-        }
-
-        public static readonly TokenEstimator TOKEN_ESTIMATOR = new TokenEstimator();
 
         public static async ValueTask<string> GetEmbedding(string text, string embeddingModelEndpoint, string embeddingModelKey, DefaultAzureCredential defaultAzureCredential)
         {
