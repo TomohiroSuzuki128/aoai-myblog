@@ -34,7 +34,8 @@ namespace IndexCreator
             string aiSerchIndexeName = Environment.GetEnvironmentVariable("AI_SEARCH_INDEX_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_INDEX_NAME is not set.");
             string aiSerchServiceName = Environment.GetEnvironmentVariable("AI_SEARCH_SEARVICE_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_SEARVICE_NAME is not set.");
             string aiSerchApiKey = Environment.GetEnvironmentVariable("AI_SEARCH_API_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_API_KEY is not set.");
-            var searchIndexClient = AIClientBuilder.GetSearchIndexClient(aiSerchIndexeName, aiSerchServiceName, aiSerchApiKey);
+            string aiSerchAdminApiKey = Environment.GetEnvironmentVariable("AI_SEARCH_ADMIN_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_ADMIN_KEY is not set.");
+            var searchIndexClient = AIClientBuilder.GetSearchIndexClient(aiSerchIndexeName, aiSerchServiceName, aiSerchAdminApiKey);
 
             string openAIApiKey = Environment.GetEnvironmentVariable("OPEN_AI_API_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("OPEN_AI_API_KEY is not set.");
             string openAIEndpoint = Environment.GetEnvironmentVariable("OPEN_AI_ENDPOINT", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("OPEN_AI_ENDPOINT is not set.");
@@ -77,11 +78,13 @@ namespace IndexCreator
             BobyContentChunker chunker = new();
             var chunks = chunker.ChunkText(bodyText);
 
+            List<SearchDocument> documents = new();
             foreach (var (chunk, index) in chunks.Select((chunk, index) => (chunk, index)))
             {
                 var id = Guid.NewGuid().ToString();
                 var embedings = await GenerateEmbeddingsAsync(openAIClient, openAIEmbeddingsDeproymentName, chunk);
-                var searchDocument = new SearchDocument()
+                
+                documents.Add(new SearchDocument
                 {
                     ["id"] = id,
                     ["content"] = chunk,
@@ -90,13 +93,13 @@ namespace IndexCreator
                     ["url"] = url,
                     ["metadata"] = "{\"chunk_id\": \"" + id + "\"}",
                     ["contentVector"] = embedings
-                };
+                });
 
-                var searchClient = searchIndexClient.GetSearchClient(aiSerchIndexeName);
-                await searchClient.UploadDocumentsAsync(searchDocument);
-
-                Console.WriteLine($"Uploading documents : {(index + 1).ToString("000000")}/{chunks.Count.ToString("000000")}");
+                //Console.WriteLine($"Uploading documents : {(index + 1).ToString("000000")}/{chunks.Count.ToString("000000")}");
             }
+
+            var searchClient = searchIndexClient.GetSearchClient(aiSerchIndexeName);
+            await searchClient.UploadDocumentsAsync(documents);
         }
 
         async ValueTask<float[]> GenerateEmbeddingsAsync(OpenAIClient openAIClient, string deproymentName, string text)
