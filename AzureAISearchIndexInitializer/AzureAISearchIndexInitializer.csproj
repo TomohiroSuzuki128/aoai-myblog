@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AIClient\AIClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="appsettings.debug.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

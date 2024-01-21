@@ -199,7 +199,7 @@ namespace IndexCreator
         //    };
         //}
 
-        public async Task<string> ExtractPdfContent(string filePath, DocumentAnalysisClient documentAnalysisClient, bool useLayout = false)
+        public async ValueTask<string> ExtractPdfContent(string filePath, DocumentAnalysisClient documentAnalysisClient, bool useLayout = false)
         {
             int offset = 0;
             var pageMap = new List<(int, int, string)>();
@@ -303,7 +303,7 @@ namespace IndexCreator
             return (match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value);
         }
 
-        public async Task DownloadBlobUrlToLocalFolder(string blobUrl, string localFolder, string credential)
+        public async ValueTask DownloadBlobUrlToLocalFolder(string blobUrl, string localFolder, string credential)
         {
             var (storageAccount, containerName, path) = ExtractStorageDetailsFromUrl(blobUrl);
             var containerUrl = $"https://{storageAccount}.blob.core.windows.net/{containerName}";
@@ -377,30 +377,6 @@ namespace IndexCreator
 
     }
 
-    public class SingletonFormRecognizerClient
-    {
-        private static DocumentAnalysisClient instance;
-
-        static SingletonFormRecognizerClient()
-        {
-            Console.WriteLine("SingletonFormRecognizerClient: Creating instance of Form recognizer per process");
-            string url = Environment.GetEnvironmentVariable("FORM_RECOGNIZER_ENDPOINT") ?? "";
-            string key = Environment.GetEnvironmentVariable("FORM_RECOGNIZER_KEY") ?? "";
-            if (!string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(key))
-            {
-                instance = new DocumentAnalysisClient(new Uri(url), new AzureKeyCredential(key));
-            }
-            else
-            {
-                Console.WriteLine("SingletonFormRecognizerClient: Skipping since credentials not provided. Assuming NO form recognizer extensions(like .pdf) in directory");
-            }
-        }
-
-        public static SingletonFormRecognizerClient Instance
-        {
-            get { return instance; }
-        }
-    }
 
     public class ChunkingResult
     {

@@ -9,10 +9,12 @@ using System.Text.RegularExpressions;
 using static IndexCreator.DataUtils;
 using HtmlAgilityPack;
 using System.Net.Http;
+using AngleSharp.Dom;
+using AngleSharp;
 
 namespace IndexCreator
 {
-    public abstract class BaseParser
+    public abstract class ParserBase
     {
         public abstract Document Parse(string content, string fileName = null);
 
@@ -69,7 +71,7 @@ namespace IndexCreator
                     return line.Substring(property.Length).Trim();
                 }
             }
-            return null;
+            return string.Empty;
         }
 
         private string GetFirstAlphanumLine(string content)
@@ -81,34 +83,34 @@ namespace IndexCreator
                     return line.Trim();
                 }
             }
-            return null;
+            return string.Empty;
         }
 
 
-        public class TextParser : BaseParser
+        public class TextParser : ParserBase
         {
             public TextParser() : base()
             {
             }
 
-            private string GetFirstAlphanumLine(string content)
+            string GetFirstAlphanumLine(string content)
             {
                 foreach (string line in content.Split(Environment.NewLine))
                 {
                     if (line.Any(c => Char.IsLetterOrDigit(c)))
                         return line.Trim();
                 }
-                return null;
+                return string.Empty;
             }
 
-            private string GetFirstLineWithProperty(string content, string property = "title: ")
+            string GetFirstLineWithProperty(string content, string property = "title: ")
             {
                 foreach (string line in content.Split(Environment.NewLine))
                 {
                     if (line.StartsWith(property))
                         return line.Substring(property.Length).Trim();
                 }
-                return null;
+                return string.Empty;
             }
 
             public override Document Parse(string content, string fileName = "")
@@ -119,13 +121,13 @@ namespace IndexCreator
         }
 
 
-        public class HTMLParser : BaseParser
+        public class HtmlParser : ParserBase
         {
             private const int TITLE_MAX_TOKENS = 128;
             private const string NEWLINE_TEMPL = "<NEWLINE_TEXT>";
             private TokenEstimator tokenEstimator;
 
-            public HTMLParser() : base()
+            public HtmlParser() : base()
             {
                 tokenEstimator = new TokenEstimator();
             }
@@ -136,32 +138,31 @@ namespace IndexCreator
                 return new Document(content: CleanupContent(content), title: title);
             }
 
-
             private string ExtractTitle(string content, string fileName)
-        {
-            var htmlDocument = new HtmlDocument();
-            htmlDocument.LoadHtml(content);
-
-            var titleNode = htmlDocument.DocumentNode.SelectSingleNode("//title");
-            if (titleNode != null)
             {
-                return titleNode.InnerText;
-            }
+                var context = BrowsingContext.New(Configuration.Default);
+                var document = context.OpenAsync(req => req.Content(content)).Result;
 
-            var h1Node = htmlDocument.DocumentNode.SelectSingleNode("//h1");
-                if (h1Node != null)
+                var titleElement = document.QuerySelector("title");
+                if (titleElement != null)
                 {
-                    return h1Node.InnerText;
+                    return titleElement.TextContent;
                 }
 
-                var h2Node = htmlDocument.DocumentNode.SelectSingleNode("//h2");
-                if (h2Node != null)
+                var h1Element = document.QuerySelector("h1");
+                if (h1Element != null)
                 {
-                    return h2Node.InnerText;
+                    return h1Element.TextContent;
+                }
+
+                var h2Element = document.QuerySelector("h2");
+                if (h2Element != null)
+                {
+                    return h2Element.TextContent;
                 }
 
                 //if title is still not found, guess using the next string
-                var title = GetNextStrippedString(htmlDocument);
+                var title = GetNextStrippedString(document);
                 title = tokenEstimator.ConstructTokensWithSize(title, TITLE_MAX_TOKENS);
 
                 if (string.IsNullOrEmpty(title))
@@ -170,15 +171,16 @@ namespace IndexCreator
                 return title;
             }
 
-            public string GetNextStrippedString(HtmlDocument htmlDocument)
+            public string GetNextStrippedString(IDocument document)
             {
-                var allTextNodes = htmlDocument.DocumentNode.DescendantsAndSelf()
-                    .Where(n => n.NodeType == HtmlNodeType.Text && n.InnerText.Trim() != "")
-                    .Select(n => n.InnerText.Trim());
+                var allTextNodes = document.All
+                    .Where(n => n.NodeType == NodeType.Text && n.TextContent.Trim() != "")
+                    .Select(n => n.TextContent.Trim());
                 // Get the first non-empty string
                 var nextStrippedString = allTextNodes.FirstOrDefault() ?? "";
                 return nextStrippedString;
             }
         }
+
     }
 }

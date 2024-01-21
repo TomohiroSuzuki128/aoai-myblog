@@ -9,9 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IndexCreatorConsoleApp", "I
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureAISearchIndexInitializer", "AzureAISearchIndexInitializer\AzureAISearchIndexInitializer.csproj", "{94D92E00-5546-4002-97E5-D73DC0A96A40}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IndexCreator", "IndexCreator\IndexCreator.csproj", "{5AC700DF-A65E-4F64-97F3-22993B968367}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IndexCreator", "IndexCreator\IndexCreator.csproj", "{5AC700DF-A65E-4F64-97F3-22993B968367}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SearchIndexClientBuilder", "SearchIndexClientBuilder\SearchIndexClientBuilder.csproj", "{04531134-DE35-44D9-AEAF-5D9459ECEE52}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIClient", "AIClient\AIClient.csproj", "{04531134-DE35-44D9-AEAF-5D9459ECEE52}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

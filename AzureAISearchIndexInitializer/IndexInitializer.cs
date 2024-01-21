@@ -138,7 +138,7 @@ namespace AzureAISearchIndexInitializer
                         IsFilterable = false,
                         AnalyzerName = LexicalAnalyzerName.JaMicrosoft
                     },
-                    new SearchField("filepath", SearchFieldDataType.String)
+                    new SearchField("filePath", SearchFieldDataType.String)
                     {
                         IsSearchable = true,
                         IsSortable = false,

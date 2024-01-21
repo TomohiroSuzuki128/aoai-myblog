@@ -42,6 +42,5 @@ namespace IndexCreator
         }
 
     }
-
 #pragma warning restore SKEXP0055 
 }

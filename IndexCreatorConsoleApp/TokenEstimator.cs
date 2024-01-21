@@ -13,7 +13,7 @@ namespace IndexCreator
                 throw new Exception("Tokenizer not built");
         }
 
-        private async Task BuildTokenizer(string modelToEncoding)
+        private async ValueTask BuildTokenizer(string modelToEncoding)
         {
             tokenizer = await TokenizerBuilder.CreateByModelNameAsync(modelToEncoding);
         }
