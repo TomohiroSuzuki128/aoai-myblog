@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "BLOB_CONNECTION_STRING": "<Azure blob connection string of your data source.>",
+    "AzureWebJobs.HttpExample.Disabled": "true",
+    "AI_SEARCH_INDEX_NAME": "<Your index name>",
+    "AI_SEARCH_SERVICE_NAME": "<Your service name>",
+    "AI_SEARCH_API_KEY": "<Your apy key>",
+    "AI_SEARCH_ADMIN_KEY": "<Your admin key>",
+    "OPEN_AI_API_KEY": "<Your apy key>",
+    "OPEN_AI_SERVICE_NAME": "<Your service name>",
+    "OPEN_AI_EMBEDDINGS_DEPROYMENTNAME": "<Your Deployment name>",
+    "OPEN_AI_EMBEDDINGS_MODELNAME": "<Your model name ex.) text-embedding-ada-002.>"
+  }
+}
