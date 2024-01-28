@@ -2,9 +2,6 @@
 using Azure.Search.Documents;
 using Azure.Search.Documents.Indexes;
 using Azure.Search.Documents.Indexes.Models;
-using Azure.Search.Documents.Models;
-using Microsoft.Extensions.Configuration;
-using System.Net;
 
 namespace AzureAISearchIndexInitializer
 {
@@ -100,7 +97,7 @@ namespace AzureAISearchIndexInitializer
 
             var semanticConfigName = "default";
             var vectorConfigName = "default";
-            const string algorithmConfigName = "hnsw";
+            var algorithmConfigName = "hnsw";
 
             var vectorSearch = new VectorSearch();
             vectorSearch.Algorithms.Add(new HnswAlgorithmConfiguration(algorithmConfigName));
@@ -141,7 +138,7 @@ namespace AzureAISearchIndexInitializer
                         IsFilterable = false,
                         AnalyzerName = LexicalAnalyzerName.JaMicrosoft
                     },
-                    new SearchField("filepath", SearchFieldDataType.String)
+                    new SearchField("filePath", SearchFieldDataType.String)
                     {
                         IsSearchable = true,
                         IsSortable = false,
@@ -177,7 +174,6 @@ namespace AzureAISearchIndexInitializer
 
             catch (RequestFailedException e) when (e.Status == 404)
             {
-                // Throw an exception if the index name isn't found
                 Console.WriteLine("The index doesn't exist. No deletion occurred.");
             }
             catch (Exception ex)
