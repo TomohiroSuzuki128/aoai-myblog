@@ -11,7 +11,6 @@ namespace IndexCreator
         public static string CleanupContent(string content)
         {
             var output = content;
-            //output = Regex.Replace(output, @"\n{2,}", "\n", RegexOptions.Multiline);
             output = Regex.Replace(output, @"[^\S\n]{2,}", " ", RegexOptions.Multiline);
             output = Regex.Replace(output, @"-{2,}", "--", RegexOptions.Multiline);
             output = Regex.Replace(output, @"^\s$\n", "\n", RegexOptions.Multiline);
@@ -43,9 +42,7 @@ namespace IndexCreator
 
     public class TextCleanser : CleanserBase
     {
-        public TextCleanser() : base()
-        {
-        }
+        public TextCleanser() : base() { }
 
         string GetFirstAlphanumLine(string content)
         {
@@ -57,7 +54,7 @@ namespace IndexCreator
             return string.Empty;
         }
 
-        private string GetFirstLineWithProperty(string content, string property = "title: ")
+        string GetFirstLineWithProperty(string content, string property = "title: ")
         {
             foreach (string line in content.Split(Environment.NewLine))
             {
@@ -76,9 +73,8 @@ namespace IndexCreator
 
     public class HtmlCleanser : CleanserBase
     {
-        private const int TITLE_MAX_TOKENS = 128;
-        private const string NEWLINE_TEMPL = "<NEWLINE_TEXT>";
-        private TokenEstimator tokenEstimator;
+        static readonly int titleMaxTokens = 128;
+        TokenEstimator tokenEstimator;
 
         public HtmlCleanser() : base()
         {
@@ -116,7 +112,7 @@ namespace IndexCreator
 
             //if title is still not found, guess using the next string
             var title = GetNextStrippedString(document);
-            title = tokenEstimator.ConstructTokensWithSize(title, TITLE_MAX_TOKENS);
+            title = tokenEstimator.ConstructTokensWithSize(title, titleMaxTokens);
 
             if (string.IsNullOrEmpty(title))
                 title = fileName;

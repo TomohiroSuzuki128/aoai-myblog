@@ -97,7 +97,7 @@ namespace AzureAISearchIndexInitializer
 
             var semanticConfigName = "default";
             var vectorConfigName = "default";
-            const string algorithmConfigName = "hnsw";
+            var algorithmConfigName = "hnsw";
 
             var vectorSearch = new VectorSearch();
             vectorSearch.Algorithms.Add(new HnswAlgorithmConfiguration(algorithmConfigName));

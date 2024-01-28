@@ -15,10 +15,11 @@ namespace AIClient
             return indexClient;
         }
 
-        public static OpenAIClient GetOpenAIClient(string endpoint, string apiKey)
+        public static OpenAIClient GetOpenAIClient(string serviceName, string apiKey)
         {
-            var openAIClient = new OpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
+            var openAIClient = new OpenAIClient(new Uri($"https://{serviceName}.openai.azure.com/"), new AzureKeyCredential(apiKey));
             return openAIClient;
         }
+
     }
 }

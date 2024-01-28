@@ -16,7 +16,7 @@ namespace IndexCreator
 {
     public class IndexCreator
     {
-        private readonly ILogger<IndexCreator> _logger;
+        readonly ILogger<IndexCreator> _logger;
 
         public IndexCreator(ILogger<IndexCreator> logger)
         {
@@ -32,16 +32,16 @@ namespace IndexCreator
                                 FunctionContext executionContext)
         {
             string aiSerchIndexeName = Environment.GetEnvironmentVariable("AI_SEARCH_INDEX_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_INDEX_NAME is not set.");
-            string aiSerchServiceName = Environment.GetEnvironmentVariable("AI_SEARCH_SEARVICE_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_SEARVICE_NAME is not set.");
+            string aiSerchServiceName = Environment.GetEnvironmentVariable("AI_SEARCH_SERVICE_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_SERVICE_NAME is not set.");
             string aiSerchApiKey = Environment.GetEnvironmentVariable("AI_SEARCH_API_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_API_KEY is not set.");
             string aiSerchAdminApiKey = Environment.GetEnvironmentVariable("AI_SEARCH_ADMIN_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_ADMIN_KEY is not set.");
             var searchIndexClient = AIClientBuilder.GetSearchIndexClient(aiSerchIndexeName, aiSerchServiceName, aiSerchAdminApiKey);
 
             string openAIApiKey = Environment.GetEnvironmentVariable("OPEN_AI_API_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("OPEN_AI_API_KEY is not set.");
-            string openAIEndpoint = Environment.GetEnvironmentVariable("OPEN_AI_ENDPOINT", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("OPEN_AI_ENDPOINT is not set.");
+            string openAIServiceName = Environment.GetEnvironmentVariable("OPEN_AI_SERVICE_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("OPEN_AI_SERVICE_NAME is not set.");
             string openAIEmbeddingsDeproymentName = Environment.GetEnvironmentVariable("OPEN_AI_EMBEDDINGS_DEPROYMENTNAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("OPEN_AI_EMBEDDINGS_DEPROYMENTNAME is not set.");
 
-            var openAIClient = AIClientBuilder.GetOpenAIClient(openAIEndpoint, openAIApiKey);
+            var openAIClient = AIClientBuilder.GetOpenAIClient(openAIServiceName, openAIApiKey);
 
 
             var contentResponse = await myBlob.DownloadContentAsync();
