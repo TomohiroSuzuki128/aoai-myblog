@@ -3,6 +3,7 @@
   "Values": {
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "BLOB_CONNECTION_STRING": "<Azure blob connection string to saving hatena blog article html.>",
-    "HATENA_ID": "<your hatena id>"
+    "SOURCE_BLOB_CONTAINER": "<Your blob container name>",
+    "HATENA_ID": "<Your hatena id>"
   }
 }
