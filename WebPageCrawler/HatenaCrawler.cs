@@ -100,7 +100,7 @@ namespace WebPageCrawler
                 var blobClient = new BlobClient
                 (
                        Environment.GetEnvironmentVariable("BLOB_CONNECTION_STRING"),
-                        "scraped-hatena",
+                       Environment.GetEnvironmentVariable("SOURCE_BLOB_CONTAINER"),
                         blobName
                     );
                 var htmlStream = await httpClient.GetStreamAsync(entry.Url);

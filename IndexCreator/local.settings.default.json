@@ -4,6 +4,7 @@
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "BLOB_CONNECTION_STRING": "<Azure blob connection string of your data source.>",
     "AzureWebJobs.HttpExample.Disabled": "true",
+    "SOURCE_BLOB_CONTAINER": "<Your blob container name>",
     "AI_SEARCH_INDEX_NAME": "<Your index name>",
     "AI_SEARCH_SERVICE_NAME": "<Your service name>",
     "AI_SEARCH_API_KEY": "<Your apy key>",

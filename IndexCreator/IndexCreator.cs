@@ -1,16 +1,12 @@
+using AIClient;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using Azure;
 using Azure.AI.OpenAI;
 using Azure.Search.Documents.Models;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using AIClient;
-using System.Text.RegularExpressions;
-using Azure.Search.Documents;
-using System;
 
 namespace IndexCreator
 {
@@ -24,7 +20,7 @@ namespace IndexCreator
         }
 
         [Function(nameof(IndexCreator))]
-        public async Task Run([BlobTrigger("scraped-hatena/{name}",
+        public async Task Run([BlobTrigger("%SOURCE_BLOB_CONTAINER%/{name}",
                                 Source = BlobTriggerSource.EventGrid,
                                 Connection = "BLOB_CONNECTION_STRING")]
                                 BlobClient myBlob,
