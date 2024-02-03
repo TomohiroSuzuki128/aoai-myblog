@@ -7,7 +7,6 @@
     "SOURCE_BLOB_CONTAINER": "<Your blob container name>",
     "AI_SEARCH_INDEX_NAME": "<Your index name>",
     "AI_SEARCH_SERVICE_NAME": "<Your service name>",
-    "AI_SEARCH_API_KEY": "<Your apy key>",
     "AI_SEARCH_ADMIN_KEY": "<Your admin key>",
     "OPEN_AI_API_KEY": "<Your apy key>",
     "OPEN_AI_SERVICE_NAME": "<Your service name>",

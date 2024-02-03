@@ -29,7 +29,6 @@ namespace IndexCreator
         {
             string aiSerchIndexeName = Environment.GetEnvironmentVariable("AI_SEARCH_INDEX_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_INDEX_NAME is not set.");
             string aiSerchServiceName = Environment.GetEnvironmentVariable("AI_SEARCH_SERVICE_NAME", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_SERVICE_NAME is not set.");
-            string aiSerchApiKey = Environment.GetEnvironmentVariable("AI_SEARCH_API_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_API_KEY is not set.");
             string aiSerchAdminApiKey = Environment.GetEnvironmentVariable("AI_SEARCH_ADMIN_KEY", EnvironmentVariableTarget.Process) ?? throw new InvalidOperationException("AI_SEARCH_ADMIN_KEY is not set.");
             var searchIndexClient = AIClientBuilder.GetSearchIndexClient(aiSerchIndexeName, aiSerchServiceName, aiSerchAdminApiKey);
 
