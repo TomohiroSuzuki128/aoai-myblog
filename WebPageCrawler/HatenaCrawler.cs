@@ -3,6 +3,8 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace WebPageCrawler
 {
@@ -11,15 +13,19 @@ namespace WebPageCrawler
         static readonly HttpClient httpClient = new();
         readonly ILogger logger;
         readonly string hatenaID;
+        readonly string blobConnecionString;
+        readonly string blobContainer;
+        readonly BlobContainerClient blobContainerClient;
 
         public HatenaCrawler(ILoggerFactory loggerFactory)
         {
             logger = loggerFactory.CreateLogger<HatenaCrawler>();
 
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("HATENA_ID")))
-                throw new Exception("HATENA_ID is not set.");
+            hatenaID = Environment.GetEnvironmentVariable("HATENA_ID") ?? throw new InvalidOperationException("HATENA_ID is not set.");
+            blobConnecionString = Environment.GetEnvironmentVariable("BLOB_CONNECTION_STRING") ?? throw new InvalidOperationException("BLOB_CONNECTION_STRING is not set.");
+            blobContainer = Environment.GetEnvironmentVariable("SOURCE_BLOB_CONTAINER") ?? throw new InvalidOperationException("SOURCE_BLOB_CONTAINER is not set.");
 
-            hatenaID = Environment.GetEnvironmentVariable("HATENA_ID") ?? string.Empty;
+            blobContainerClient = new BlobContainerClient(blobConnecionString, blobContainer);
         }
 
         [Function("HatenaCrawler")]
@@ -31,7 +37,7 @@ namespace WebPageCrawler
                 logger.LogInformation($"Next timer schedule at: {myTimer.ScheduleStatus.Next}");
 
             var entries = await HatenaBlogScraper($"https://{hatenaID}.hatenablog.jp/");
-            await SaveHtmlToAzureBlob(entries);
+            await UpdateAzureBlobContainerItems(entries);
 
             Console.WriteLine("Function \"HatenaCrawler\" is Completed!");
         }
@@ -70,14 +76,24 @@ namespace WebPageCrawler
 
                     var entryHtml = await httpClient.GetStringAsync(entryUrl);
                     var entryDocument = await parser.ParseDocumentAsync(entryHtml);
-                    var publishedTimeNode = entryDocument.QuerySelector("meta[property='article:published_time']");
-                    var publishedUnixEpochTicks = publishedTimeNode?.GetAttribute("content") ?? throw new InvalidOperationException("content is not found.");
-                    var publishedDateTimeOffset = DateTimeOffset.FromUnixTimeSeconds(long.Parse(publishedUnixEpochTicks));
+
+                    var jsonNode = entryDocument.QuerySelector("script[type='application/ld+json']");
+                    var jsonString = jsonNode?.TextContent ?? throw new InvalidOperationException("json is not found.");
+                    var articleInfo = JsonNode.Parse(jsonString);
+
+                    if(articleInfo == null) 
+                        throw new InvalidOperationException("json is not parsed.");
+
+                    string datePublished = articleInfo["datePublished"]?.GetValue<string>() ?? throw new InvalidOperationException("Key \"datePublished\" is not found.");
+                    string dateModified = articleInfo["dateModified"]?.GetValue<string>() ?? throw new InvalidOperationException("Key \"dateModified\" is not found.");
+      
+                    var publishedDateTimeOffset = DateTimeOffset.Parse(datePublished);
+                    var lastUpdatedDateTimeOffset = DateTimeOffset.Parse(dateModified);
 
                     var entry = new HatenaBlogEntry(
                        title: node.TextContent,
                        url: entryUrl,
-                       lastUpdated: publishedDateTimeOffset.ToOffset(TimeSpan.FromHours(9))
+                       lastUpdated: lastUpdatedDateTimeOffset.ToOffset(TimeSpan.FromHours(9))
                        );
                     entries.Add(entry);
                 }
@@ -87,39 +103,66 @@ namespace WebPageCrawler
                 {
                     url = nextPageNode.GetAttribute("href");
                     continueLoop = true;
+#if DEBUG
+                    continueLoop = false;
+#endif
                 }
+
             }
             return entries;
         }
 
-        async ValueTask SaveHtmlToAzureBlob(List<HatenaBlogEntry> entries)
+        async ValueTask UpdateAzureBlobContainerItems(List<HatenaBlogEntry> entries)
         {
             foreach (var (entry, index) in entries.Select((entry, index) => (entry, index)))
             {
                 var blobName = entry.Url.Replace($"https://{hatenaID}.hatenablog.jp/entry/", "").Replace("/", "-") + ".html";
-                var blobClient = new BlobClient
-                (
-                       Environment.GetEnvironmentVariable("BLOB_CONNECTION_STRING"),
-                       Environment.GetEnvironmentVariable("SOURCE_BLOB_CONTAINER"),
-                        blobName
-                    );
-                var htmlStream = await httpClient.GetStreamAsync(entry.Url);
-                var options = new BlobUploadOptions
+                var blobClient = blobContainerClient.GetBlobClient(blobName);
+                bool exists = await blobClient.ExistsAsync();
+                if (!exists)
                 {
-                    HttpHeaders = new BlobHttpHeaders
+                    Console.WriteLine($"Upload : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
+                    await UploadOrUpdateAzureBlobItem(entry, blobClient);
+                }
+                else
+                {
+                    var response = await blobClient.DownloadAsync();
+                    if (!string.IsNullOrEmpty(response.Value.Details.Metadata["lastUpdated"]))
                     {
-                        ContentType = "text/html",
-                    },
-                    Metadata = new Dictionary<string, string>
-                    {
-                        { "url", entry.Url },
-                        { "lastUpdated", entry.LastUpdated.ToString()}
+                        var azureBlogLastUpdated = DateTimeOffset.Parse(response.Value.Details.Metadata["lastUpdated"]);
+
+                        // 面倒なのでタイムスタンプが一致しているときのみスキップ
+                        // つまり、はてな側のの更新日が古くても上書きする
+                        // 理由：齟齬があるのは間違いなく、はてな側を正とすべきなのは何ら変わらないから
+                        if (entry.LastUpdated == azureBlogLastUpdated)
+                        {
+                            Console.WriteLine($"Skip   : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
+                            continue;
+                        }
                     }
-                    // TODO:更新条件実装
-                };
-                Console.WriteLine($"Uploading : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
-                await blobClient.UploadAsync(htmlStream, options);
+
+                    Console.WriteLine($"Upload : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
+                    await UploadOrUpdateAzureBlobItem(entry, blobClient);
+                }
             }
+        }
+
+        async ValueTask UploadOrUpdateAzureBlobItem(HatenaBlogEntry entry, BlobClient blobClient)
+        {
+            var htmlStream = await httpClient.GetStreamAsync(entry.Url);
+            var options = new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = "text/html",
+                },
+                Metadata = new Dictionary<string, string>
+                {
+                    { "url", entry.Url },
+                    { "lastUpdated", entry.LastUpdated.ToString()}
+                }
+            };
+            await blobClient.UploadAsync(htmlStream, options);
         }
     }
 }
