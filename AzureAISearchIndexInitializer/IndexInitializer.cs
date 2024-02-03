@@ -13,90 +13,8 @@ namespace AzureAISearchIndexInitializer
             var options = new SearchClientOptions(SearchClientOptions.ServiceVersion.V2023_11_01);
             var indexClient = new SearchIndexClient(new Uri(searchServiceEndPoint), new AzureKeyCredential(apiKey), options);
 
-
-            //"fields": [
-            //             {
-            //    "name": "id",
-            //            "type": "Edm.String",
-            //            "searchable": True,
-            //            "key": True,
-            //        },
-            //        {
-            //    "name": "content",
-            //            "type": "Edm.String",
-            //            "searchable": True,
-            //            "sortable": False,
-            //            "facetable": False,
-            //            "filterable": False,
-            //            "analyzer": f"{language}.lucene" if language else None,
-            //        },
-            //        {
-            //    "name": "title",
-            //            "type": "Edm.String",
-            //            "searchable": True,
-            //            "sortable": False,
-            //            "facetable": False,
-            //            "filterable": False,
-            //            "analyzer": f"{language}.lucene" if language else None,
-            //        },
-            //        {
-            //    "name": "filepath",
-            //            "type": "Edm.String",
-            //            "searchable": True,
-            //            "sortable": False,
-            //            "facetable": False,
-            //            "filterable": False,
-            //        },
-            //        {
-            //    "name": "url",
-            //            "type": "Edm.String",
-            //            "searchable": True,
-            //        },
-            //        {
-            //    "name": "metadata",
-            //            "type": "Edm.String",
-            //            "searchable": True,
-            //        },
-            //    ],
-            //    "suggesters": [],
-            //    "scoringProfiles": [],
-            //    "semantic": {
-            //            "configurations": [
-            //                {
-            //                "name": semantic_config_name,
-            //                "prioritizedFields": {
-            //                    "titleField": { "fieldName": "title"},
-            //                    "prioritizedContentFields": [{ "fieldName": "content"}],
-            //                    "prioritizedKeywordsFields": [],
-            //                },
-            //            }
-            //        ]
-            //    },
-            //}
-
-            //if vector_config_name:
-            //    body["fields"].append({
-            //        "name": "contentVector",
-            //        "type": "Collection(Edm.Single)",
-            //        "searchable": True,
-            //        "retrievable": True,
-            //        "dimensions": 1536,
-            //        "vectorSearchConfiguration": vector_config_name
-            //    })
-
-            //    body["vectorSearch"] = {
-            //        "algorithmConfigurations": [
-            //            {
-            //                "name": vector_config_name,
-            //                "kind": "hnsw"
-            //            }
-            //        ]
-            //    }
-
-
-
-            var semanticConfigName = "default";
-            var vectorConfigName = "default";
+            var semanticConfigName = "defaultSemanticConfig";
+            var vectorConfigName = "defaultVectorConfigName";
             var algorithmConfigName = "hnsw";
 
             var vectorSearch = new VectorSearch();
@@ -108,13 +26,15 @@ namespace AzureAISearchIndexInitializer
                 TitleField = new SemanticField("title"),
             };
             semanticPrioritizedFields.ContentFields.Add(new SemanticField("content"));
+            // TODO : Add prioritizedKeywordsFields
+
             var semanticSearch = new SemanticSearch();
             semanticSearch.Configurations.Add(new SemanticConfiguration(semanticConfigName, semanticPrioritizedFields));
 
             var defaulIindex = new SearchIndex(indexName)
             {
                 VectorSearch = vectorSearch,
-                //SemanticSearch = semanticSearch,
+                SemanticSearch = semanticSearch,
                 Fields =
                 {
                     new SearchField("id", SearchFieldDataType.String)
