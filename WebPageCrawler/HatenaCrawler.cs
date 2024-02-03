@@ -36,7 +36,7 @@ namespace WebPageCrawler
             if (myTimer.ScheduleStatus is not null)
                 logger.LogInformation($"Next timer schedule at: {myTimer.ScheduleStatus.Next}");
 
-            var entries = await HatenaBlogScraper($"https://{hatenaID}.hatenablog.jp/");
+            var entries = await CrawlHatenaBlogArticles($"https://{hatenaID}.hatenablog.jp/");
             await UpdateAzureBlobContainerItems(entries);
 
             Console.WriteLine("Function \"HatenaCrawler\" is Completed!");
@@ -55,7 +55,7 @@ namespace WebPageCrawler
             public DateTimeOffset LastUpdated { get; }
         }
 
-        async ValueTask<List<HatenaBlogEntry>> HatenaBlogScraper(string blogRootUrl)
+        async ValueTask<List<HatenaBlogEntry>> CrawlHatenaBlogArticles(string blogRootUrl)
         {
             var continueLoop = true;
             var url = blogRootUrl;
