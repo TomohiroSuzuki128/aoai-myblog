@@ -396,12 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Local AppSettings
 AzureAISearchIndexInitializer/appsettings.debug.json
-
-
-
-# Zip Deploy
-AzureAISearchIndexInitializer/appsettings.debug.json
-
-WebPageCrawler/Properties/serviceDependencies.* - Zip Deploy.json
-WebPageCrawler/Properties/ServiceDependencies/* - Zip Deploy/*.json
