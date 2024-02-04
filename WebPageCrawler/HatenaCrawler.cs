@@ -29,7 +29,11 @@ namespace WebPageCrawler
         }
 
         [Function("HatenaCrawler")]
+#if RELEASE
+        public async Task Run([TimerTrigger("0 */30 * * * *")] TimerInfo myTimer)
+#　else
         public async Task Run([TimerTrigger("0 */3 * * * *")] TimerInfo myTimer)
+#endif
         {
             logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
