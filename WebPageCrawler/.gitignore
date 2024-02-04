@@ -262,3 +262,9 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# Zip Deploy
+AzureAISearchIndexInitializer/appsettings.debug.json
+
+/WebPageCrawler/Properties/ServiceDependencies/*Zip Deploy*
+/WebPageCrawler/Properties/serviceDependencies.*Zip Deploy*
