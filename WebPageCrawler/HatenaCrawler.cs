@@ -3,13 +3,13 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace WebPageCrawler
 {
     public class HatenaCrawler
     {
+        static readonly int uploadLimit = 20;
         static readonly HttpClient httpClient = new();
         readonly ILogger logger;
         readonly string hatenaID;
@@ -30,7 +30,7 @@ namespace WebPageCrawler
 
         [Function("HatenaCrawler")]
 #if RELEASE
-        public async Task Run([TimerTrigger("0 */30 * * * *")] TimerInfo myTimer)
+        public async Task Run([TimerTrigger("0 */10 * * * *")] TimerInfo myTimer)
 #　else
         public async Task Run([TimerTrigger("0 */3 * * * *")] TimerInfo myTimer)
 #endif
@@ -43,7 +43,7 @@ namespace WebPageCrawler
             var entries = await CrawlHatenaBlogArticles($"https://{hatenaID}.hatenablog.jp/");
             await UpdateAzureBlobContainerItems(entries);
 
-            Console.WriteLine("Function \"HatenaCrawler\" is Completed!");
+            logger.LogInformation("Function \"HatenaCrawler\" is Completed!");
         }
 
         public class HatenaBlogEntry
@@ -75,8 +75,8 @@ namespace WebPageCrawler
                 foreach (var node in document.QuerySelectorAll("a.entry-title-link.bookmark"))
                 {
                     var entryUrl = node.GetAttribute("href") ?? throw new InvalidOperationException("href is not found.");
-                    Console.WriteLine($"URL : {entryUrl}");
-                    Console.WriteLine($"TextContent : {node.TextContent}");
+                    logger.LogInformation($"URL : {entryUrl}");
+                    logger.LogInformation($"TextContent : {node.TextContent}");
 
                     var entryHtml = await httpClient.GetStringAsync(entryUrl);
                     var entryDocument = await parser.ParseDocumentAsync(entryHtml);
@@ -116,17 +116,26 @@ namespace WebPageCrawler
             return entries;
         }
 
+        // はてなブログの記事をAzure Blob Storageにアップロードする
+        // （多すぎるとインデックス作成が失敗するのでmaxUploadArticlの設定値まで）
         async ValueTask UpdateAzureBlobContainerItems(List<HatenaBlogEntry> entries)
         {
+            var currentUploadCount = 0;
             foreach (var (entry, index) in entries.Select((entry, index) => (entry, index)))
             {
+                if (currentUploadCount >= uploadLimit)
+                {
+                    logger.LogInformation($"Upload limit reached. {uploadLimit} articles uploaded.");
+                    break;
+                }
                 var blobName = entry.Url.Replace($"https://{hatenaID}.hatenablog.jp/entry/", "").Replace("/", "-") + ".html";
                 var blobClient = blobContainerClient.GetBlobClient(blobName);
                 bool exists = await blobClient.ExistsAsync();
                 if (!exists)
                 {
-                    Console.WriteLine($"Upload : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
+                    logger.LogInformation($"Upload : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
                     await UploadOrUpdateAzureBlobItem(entry, blobClient);
+                    currentUploadCount++;
                 }
                 else
                 {
@@ -140,13 +149,14 @@ namespace WebPageCrawler
                         // 理由：齟齬があるのは間違いなく、はてな側を正とすべきなのは何ら変わらないから
                         if (entry.LastUpdated == azureBlogLastUpdated)
                         {
-                            Console.WriteLine($"Skip   : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
+                            logger.LogInformation($"Skip   : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
                             continue;
                         }
                     }
 
-                    Console.WriteLine($"Upload : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
+                    logger.LogInformation($"Upload : {(index + 1).ToString("000000")}/{entries.Count.ToString("000000")} {entry.Url}");
                     await UploadOrUpdateAzureBlobItem(entry, blobClient);
+                    currentUploadCount++;
                 }
             }
         }
