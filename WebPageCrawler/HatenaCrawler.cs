@@ -117,7 +117,7 @@ namespace WebPageCrawler
         }
 
         // はてなブログの記事をAzure Blob Storageにアップロードする
-        // （多すぎるとインデックス作成が失敗するのでmaxUploadArticlの設定値まで）
+        // （多すぎるとインデックス作成が失敗するので uploadLimit の設定値まで）
         async ValueTask UpdateAzureBlobContainerItems(List<HatenaBlogEntry> entries)
         {
             var currentUploadCount = 0;
