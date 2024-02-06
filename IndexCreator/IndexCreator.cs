@@ -1,7 +1,8 @@
-using AIClient;
+﻿using AIClient;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using Azure;
 using Azure.AI.OpenAI;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
@@ -97,6 +98,7 @@ namespace IndexCreator
             }
 
             var searchClient = searchIndexClient.GetSearchClient(aiSerchIndexeName);
+            await DeleteDocumentByUrlAsync(searchClient, url);
             await searchClient.UploadDocumentsAsync(documents);
         }
 
@@ -107,11 +109,22 @@ namespace IndexCreator
             return result.Value.Data[0].Embedding.ToArray();
         }
 
-        async ValueTask DeleteDocumentAsync(string url, SearchClient searchClient)
+        // url フィールドでインデックスデータを取得し、id フィールドで削除する
+        async Task DeleteDocumentByUrlAsync(SearchClient searchClient, string url)
         {
-            var response = await searchClient.DeleteDocumentsAsync(new List<string>() { url });
-            Console.WriteLine($"DeleteDocumentsAsync : {response.Status} {response.ReasonPhrase}");
-        }
+            SearchOptions options = new SearchOptions()
+            {
+                Filter = $"url eq '{url}'",
+                Size = 100
+            };
 
+            var response = searchClient.Search<SearchDocument>("*", options);
+
+            foreach (SearchResult<SearchDocument> result in response.Value.GetResults())
+            {
+                var id = result.Document["id"].ToString() ?? string.Empty;
+                await searchClient.DeleteDocumentsAsync("id", new List<string>() { id });
+            }
+        }
     }
 }
