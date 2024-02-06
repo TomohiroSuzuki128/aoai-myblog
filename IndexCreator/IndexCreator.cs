@@ -3,6 +3,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Azure.AI.OpenAI;
+using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
@@ -77,11 +78,13 @@ namespace IndexCreator
             foreach (var (chunk, index) in chunks.Select((chunk, index) => (chunk, index)))
             {
                 var id = Guid.NewGuid().ToString();
+                var lastUpdatedText = DateTimeOffset.Now.ToString();
                 var embedings = await GenerateEmbeddingsAsync(openAIClient, openAIEmbeddingsDeproymentName, chunk);
                 
                 documents.Add(new SearchDocument
                 {
                     ["id"] = id,
+                    ["lastUpdated"] = lastUpdatedText,
                     ["content"] = chunk,
                     ["title"] = title,
                     ["filePath"] = name,
@@ -102,6 +105,12 @@ namespace IndexCreator
             var result = await openAIClient.GetEmbeddingsAsync(
                 new EmbeddingsOptions(deproymentName, new List<string>() { text }));
             return result.Value.Data[0].Embedding.ToArray();
+        }
+
+        async ValueTask DeleteDocumentAsync(string url, SearchClient searchClient)
+        {
+            var response = await searchClient.DeleteDocumentsAsync(new List<string>() { url });
+            Console.WriteLine($"DeleteDocumentsAsync : {response.Status} {response.ReasonPhrase}");
         }
 
     }

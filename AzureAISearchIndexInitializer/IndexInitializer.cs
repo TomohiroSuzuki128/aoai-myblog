@@ -42,6 +42,11 @@ namespace AzureAISearchIndexInitializer
                         IsKey = true,
                         IsSearchable = true
                     },
+                    new SearchField("lastUpdated", SearchFieldDataType.String)
+                    {
+                        IsSearchable = true,
+                        IsFacetable = false,
+                    },
                     new SearchField("content", SearchFieldDataType.String)
                     {
                         IsSearchable = true,
