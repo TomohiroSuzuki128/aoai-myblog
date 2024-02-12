@@ -10,10 +10,10 @@ namespace IndexCreator
         {
             BuildTokenizer(modelToEncoding).Wait();
             if (tokenizer == null)
-                throw new Exception("Tokenizer not built");
+                throw new Exception("Tokenizer is not built");
         }
 
-        private async Task BuildTokenizer(string modelToEncoding)
+        async Task BuildTokenizer(string modelToEncoding)
         {
             tokenizer = await TokenizerBuilder.CreateByModelNameAsync(modelToEncoding);
         }
