@@ -120,7 +120,7 @@ namespace IndexCreator
 
             var response = searchClient.Search<SearchDocument>("*", options);
 
-            foreach (SearchResult<SearchDocument> result in response.Value.GetResults())
+            foreach (var result in response.Value.GetResults())
             {
                 var id = result.Document["id"].ToString() ?? string.Empty;
                 await searchClient.DeleteDocumentsAsync("id", new List<string>() { id });
