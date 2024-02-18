@@ -88,7 +88,7 @@ namespace IndexCreator
                     ["lastUpdated"] = lastUpdatedText,
                     ["content"] = chunk,
                     ["title"] = title,
-                    ["filePath"] = name,
+                    ["filePath"] = url,
                     ["url"] = url,
                     ["metadata"] = "{\"chunk_id\": \"" + id + "\"}",
                     ["contentVector"] = embedings
